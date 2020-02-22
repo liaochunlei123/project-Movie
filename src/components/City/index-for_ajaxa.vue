@@ -1,5 +1,5 @@
 <template>
-  <div class="city_body">
+  <!-- <div class="city_body">
     <div class="city_list">
       <div class="city_hot">
         <h2>热门城市</h2>
@@ -80,12 +80,112 @@
         <li>E</li>
       </ul>
     </div>
+  </div> -->
+  <div class="city_body">
+    <div class="city_list">
+      <div class="city_hot">
+        <h2>热门城市</h2>
+        <ul class="clearfix">
+          <li v-for="item in hotList" :key="item.id">{{item.nm}}</li>
+        </ul>
+      </div>
+      <div class="city_sort" ref="city_sort">
+        <div v-for="item in CityList" :key="item.index" >
+          <h2>{{item.index}}</h2>
+          <ul>
+            <li v-for="list in item.list" :key="list.id">{{list.nm}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="city_index">
+      <ul>
+        <li v-for="(item,index) in CityList" :key="item.index" @touchstart="handleToIndex(index)">{{item.index}}</li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   name: "City",
+  data(){
+    return{
+      CityList:[],
+      hotList:[]
+    } 
+  },
+
+  mounted(){
+    this.axios.get('/api/CityList').then((res)=>{
+      var msg = res.data.msg;
+      if(msg === 'ok'){
+        var cities = res.data.data.cities;
+        var {CityList,hotList}=this.formatCityList(cities);
+        this.CityList = CityList;
+        this.hotList = hotList
+      }
+    })
+  },
+
+  methods:{
+    formatCityList(cities){
+      var CityList = [];
+      var hotList = [];
+
+      for(var i=0;i<cities.length;i++){
+        if(cities[i].isHot){hotList.push(cities[i])}
+      }
+
+      for(var i=0;i<cities.length;i++){
+        var firstLetter = cities[i].py.substring(0,1).toUpperCase();
+        if(toCom(firstLetter)){//新添加
+          CityList.push({
+            index:firstLetter,
+            list:[{nm:cities[i].nm, id:cities[i].id}]
+          })
+        }else{//累加
+          for(var j=0;j<CityList.length;j++){
+            if(CityList[j].index === firstLetter){
+              CityList[j].list.push({nm:cities[i].nm, id:cities[i].id})
+            }
+          }
+        }
+      }
+
+      function toCom(firstLetter){
+        for(var i=0;i<CityList.length;i++){
+          if(CityList[i].index === firstLetter){
+            return false
+          }  
+        }
+        return true
+      }
+
+      CityList.sort((n1,n2)=>{
+        if(n1.index > n2.index){
+          return 1;
+        }else if(n1.index < n2.index){
+          return -1;
+        }else{
+          return 0
+        }
+      })
+
+      return {
+        CityList,
+        hotList 
+      }  
+
+    },//formatCityList end
+
+  handleToIndex(index){
+    var h2 = this.$refs.city_sort.getElementsByTagName('h2');
+    this.$refs.city_sort.parentNode.scrollTop = h2[index].offsetTop
+  }
+
+  },//methods end
+
 }
 </script>
 
